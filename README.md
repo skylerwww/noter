@@ -1,6 +1,7 @@
 # noter
 
 A Chrome/Chromium extension for annotating UI elements. Hover to highlight, click to select, capture a screenshot of the element, write a note, then export everything as a Markdown or JSON document ready to hand to an AI agent.
+<img width="348" height="324" alt="Screenshot 2026-05-16 at 6 48 11 PM" src="https://github.com/user-attachments/assets/6f14ef84-268c-4919-b6da-05a3699e91dd" />
 
 ---
 
