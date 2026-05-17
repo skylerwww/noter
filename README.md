@@ -42,19 +42,19 @@ Human-readable document with embedded base64 screenshots. Best for pasting direc
 
 | | |
 |---|---|
-| Page | OCEAN - Pool Statistics |
-| URL  | http://localhost:3002/dashboard |
+| Page | Acme — Settings |
+| URL  | https://example.com/settings |
 | Total Annotations | 3 |
 
 ## Annotation #1
 | Field | Value |
 |---|---|
-| Element | `.stats-card:nth-of-type(2)` |
+| Element | `button.save-btn` |
 | Position | x: 640, y: 200 |
-| Size | 300 × 150 px |
+| Size | 120 × 40 px |
 
 ### Note
-> The hashrate shows GH/s but should show TH/s.
+> Button label should say "Save changes", not "Save".
 
 ### Screenshot
 ![Annotation #1](data:image/png;base64,...)
@@ -67,23 +67,23 @@ Structured data with all annotation metadata plus base64 screenshots. Ideal for 
 {
   "meta": {
     "tool": "noter v1.0",
-    "page": "OCEAN - Pool Statistics",
-    "url": "http://localhost:3002/dashboard",
+    "page": "Acme — Settings",
+    "url": "https://example.com/settings",
     "exported": "2026-05-14T12:00:00.000Z",
     "count": 3
   },
   "annotations": [
     {
       "id": 1,
-      "selector": ".stats-card:nth-of-type(2)",
-      "tagName": "div",
-      "innerText": "450.2 GH/s Total Hashrate",
-      "rect": { "x": 640, "y": 200, "width": 300, "height": 150 },
-      "note": "The hashrate shows GH/s but should show TH/s.",
+      "selector": "button.save-btn",
+      "tagName": "button",
+      "innerText": "Save",
+      "rect": { "x": 640, "y": 200, "width": 120, "height": 40 },
+      "note": "Button label should say \"Save changes\", not \"Save\".",
       "screenshot": "data:image/png;base64,...",
       "timestamp": "2026-05-14T12:00:00.000Z",
-      "pageUrl": "http://localhost:3002/dashboard",
-      "pageTitle": "OCEAN - Pool Statistics"
+      "pageUrl": "https://example.com/settings",
+      "pageTitle": "Acme — Settings"
     }
   ]
 }
