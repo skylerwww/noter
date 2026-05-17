@@ -1,0 +1,269 @@
+/* content.css — noter injected styles
+   All selectors are prefixed with __ua- to avoid collisions.
+   Critical layout properties use !important to survive page resets.
+*/
+
+/* ── Highlight overlay ─────────────────────────────────────────────────── */
+#__ua-highlight {
+  position: fixed !important;
+  pointer-events: none !important;
+  border: 2px solid #f97316 !important;
+  background: rgba(249, 115, 22, 0.08) !important;
+  z-index: 2147483644 !important;
+  box-sizing: border-box !important;
+  border-radius: 3px !important;
+  display: none;
+  transition: top 60ms ease, left 60ms ease, width 60ms ease, height 60ms ease !important;
+}
+
+/* ── Crosshair cursor when mode is active ──────────────────────────────── */
+.__ua-active *:not([id^="__ua-"]):not([class*="__ua-"]) {
+  cursor: crosshair !important;
+}
+
+/* ── Mode indicator pill ───────────────────────────────────────────────── */
+#__ua-mode-indicator {
+  position: fixed !important;
+  top: 16px !important;
+  right: 16px !important;
+  background: #f97316 !important;
+  color: #fff !important;
+  padding: 6px 14px !important;
+  border-radius: 999px !important;
+  font-family: system-ui, -apple-system, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em !important;
+  z-index: 2147483646 !important;
+  pointer-events: none !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35) !important;
+  display: none;
+  align-items: center !important;
+  gap: 6px !important;
+  line-height: 1 !important;
+}
+
+#__ua-mode-indicator .__ua-dot {
+  animation: __ua-pulse 1.2s ease-in-out infinite !important;
+}
+
+@keyframes __ua-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ── Annotation badge ──────────────────────────────────────────────────── */
+.__ua-badge {
+  position: absolute !important;
+  width: 22px !important;
+  height: 22px !important;
+  background: #f97316 !important;
+  color: #fff !important;
+  border-radius: 50% !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-family: system-ui, sans-serif !important;
+  z-index: 2147483645 !important;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4) !important;
+  line-height: 1 !important;
+  pointer-events: auto !important;
+  cursor: default !important;
+}
+
+/* ── Modal overlay ─────────────────────────────────────────────────────── */
+#__ua-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(0, 0, 0, 0.55) !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  backdrop-filter: blur(2px) !important;
+  -webkit-backdrop-filter: blur(2px) !important;
+}
+
+/* ── Modal panel ───────────────────────────────────────────────────────── */
+#__ua-modal {
+  background: #141414 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 14px !important;
+  width: 500px !important;
+  max-width: 92vw !important;
+  max-height: 88vh !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6) !important;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
+  color: #e5e5e5 !important;
+}
+
+/* ── Modal header ──────────────────────────────────────────────────────── */
+.__ua-modal-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 16px 18px 14px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  flex-shrink: 0 !important;
+}
+
+.__ua-modal-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #f5f5f5 !important;
+  white-space: nowrap !important;
+}
+
+.__ua-modal-title svg {
+  flex-shrink: 0 !important;
+  color: #f97316 !important;
+}
+
+.__ua-selector-badge {
+  flex: 1 !important;
+  font-size: 11px !important;
+  font-family: 'SFMono-Regular', Consolas, monospace !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  color: #a3a3a3 !important;
+  padding: 3px 8px !important;
+  border-radius: 5px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  display: block !important;
+  max-width: 260px !important;
+}
+
+.__ua-close-btn {
+  background: none !important;
+  border: none !important;
+  color: #6b6b6b !important;
+  font-size: 16px !important;
+  cursor: pointer !important;
+  padding: 2px 6px !important;
+  border-radius: 5px !important;
+  line-height: 1 !important;
+  flex-shrink: 0 !important;
+  transition: color 0.15s, background 0.15s !important;
+}
+
+.__ua-close-btn:hover {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ── Screenshot preview ────────────────────────────────────────────────── */
+.__ua-preview {
+  background: #0a0a0a !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  max-height: 240px !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
+.__ua-preview-img {
+  max-width: 100% !important;
+  max-height: 240px !important;
+  object-fit: contain !important;
+  display: block !important;
+}
+
+/* ── Modal body ────────────────────────────────────────────────────────── */
+.__ua-modal-body {
+  padding: 16px 18px 18px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  overflow-y: auto !important;
+}
+
+.__ua-label {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #a3a3a3 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: uppercase !important;
+}
+
+.__ua-textarea {
+  width: 100% !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 8px !important;
+  color: #e5e5e5 !important;
+  font-family: system-ui, -apple-system, sans-serif !important;
+  font-size: 13.5px !important;
+  line-height: 1.55 !important;
+  padding: 10px 12px !important;
+  resize: vertical !important;
+  box-sizing: border-box !important;
+  outline: none !important;
+  transition: border-color 0.15s !important;
+  min-height: 88px !important;
+}
+
+.__ua-textarea:focus {
+  border-color: #f97316 !important;
+  background: rgba(249, 115, 22, 0.04) !important;
+}
+
+.__ua-textarea-error {
+  border-color: #ef4444 !important;
+}
+
+.__ua-hint {
+  font-size: 11px !important;
+  color: #525252 !important;
+  margin: 0 !important;
+  font-family: system-ui, sans-serif !important;
+}
+
+/* ── Modal footer ──────────────────────────────────────────────────────── */
+.__ua-modal-footer {
+  display: flex !important;
+  gap: 8px !important;
+  justify-content: flex-end !important;
+  margin-top: 4px !important;
+}
+
+.__ua-btn {
+  padding: 8px 18px !important;
+  border-radius: 7px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  font-family: system-ui, sans-serif !important;
+  cursor: pointer !important;
+  border: none !important;
+  line-height: 1 !important;
+  transition: opacity 0.15s, background 0.15s !important;
+}
+
+.__ua-btn-ghost {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #a3a3a3 !important;
+}
+
+.__ua-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: #e5e5e5 !important;
+}
+
+.__ua-btn-primary {
+  background: #f97316 !important;
+  color: #fff !important;
+}
+
+.__ua-btn-primary:hover {
+  background: #ea6c0d !important;
+}

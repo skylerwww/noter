@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>noter — popup UI mock (dev)</title>
+  <style>
+    /* Sync popup styles from ../popup.html when changing production UI. */
+    @font-face {
+      font-family: 'Geist';
+      src: local('Geist'), local('Geist Regular');
+      font-style: normal;
+      font-weight: 100 900;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { background: #121214; }
+    body {
+      width: auto;
+      min-height: 100vh;
+      padding: 28px;
+      color: #e5e5e5;
+      font-family: 'Geist', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 13px;
+    }
+
+    .dev-header {
+      max-width: 1200px;
+      margin-bottom: 24px;
+      font-family: system-ui, sans-serif;
+    }
+    .dev-header h1 { font-size: 18px; font-weight: 600; color: #fafafa; margin-bottom: 6px; }
+    .dev-header p { font-size: 13px; color: #a1a1aa; line-height: 1.5; }
+
+    .dev-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 28px;
+      align-items: flex-start;
+    }
+    .dev-col { flex: 0 0 auto; }
+    .dev-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #71717a;
+      margin-bottom: 10px;
+      font-family: system-ui, sans-serif;
+    }
+
+    .popup-chrome {
+      background: #2563eb;
+      padding: 8px;
+      width: fit-content;
+      border-radius: 30px; /* match popup.html: 22px shell + 8px ring */
+    }
+
+    .popup-shell {
+      background: #111;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.42);
+      width: 320px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 14px 16px 13px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .header-icon {
+      width: 28px;
+      height: 28px;
+      background: #f97316;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .header-icon svg { color: #fff; }
+    .header-text h1 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #f5f5f5;
+      line-height: 1.2;
+    }
+    .header-text p {
+      font-size: 10.5px;
+      color: #6f6f6f;
+      margin-top: 1px;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      transition: background 0.3s;
+    }
+    .toggle-row.is-active {
+      background: rgba(249, 115, 22, 0.06);
+    }
+    .toggle-label {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .toggle-label strong {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #e5e5e5;
+    }
+    .toggle-label small {
+      font-size: 10.5px;
+      color: #6f6f6f;
+      transition: color 0.3s;
+    }
+    .toggle-row.is-active .toggle-label small {
+      color: #f97316;
+    }
+
+    .switch {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      flex-shrink: 0;
+      cursor: default;
+    }
+    .switch input { display: none; }
+    .switch-track {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.1);
+      transition: background 0.25s, box-shadow 0.25s;
+    }
+    .switch-thumb {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #737373;
+      transition: transform 0.25s, background 0.25s;
+    }
+    .switch input:checked ~ .switch-track {
+      background: #f97316;
+      box-shadow: 0 0 0 3px rgba(249,115,22,0.2), 0 0 14px rgba(249,115,22,0.4);
+      animation: glow-pulse 2s ease-in-out infinite;
+    }
+    .switch input:checked ~ .switch-thumb {
+      transform: translateX(18px);
+      background: #fff;
+    }
+    @keyframes glow-pulse {
+      0%,100% { box-shadow: 0 0 0 3px rgba(249,115,22,0.2), 0 0 14px rgba(249,115,22,0.4); }
+      50%      { box-shadow: 0 0 0 3px rgba(249,115,22,0.3), 0 0 22px rgba(249,115,22,0.6); }
+    }
+
+    .sessions {
+      display: flex;
+      flex-direction: column;
+    }
+    .sessions-empty {
+      padding: 22px 16px;
+      text-align: center;
+      font-size: 11.5px;
+      color: #6f6f6f;
+      line-height: 1.6;
+    }
+    .sessions-empty strong {
+      display: block;
+      color: #8a8a8a;
+      font-size: 12px;
+      margin-bottom: 3px;
+    }
+
+    .session-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px 10px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      transition: background 0.12s;
+    }
+    .session-item:hover { background: rgba(255,255,255,0.03); }
+    .session-info { flex: 1; overflow: hidden; }
+    .session-title {
+      font-size: 12px;
+      font-weight: 500;
+      color: #d4d4d4;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .session-meta {
+      font-size: 10.5px;
+      color: #6b6b6b;
+      margin-top: 2px;
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+    .session-count { font-weight: 600; color: #737373; }
+    .session-dot {
+      width: 2px; height: 2px;
+      border-radius: 50%;
+      background: #404040;
+      flex-shrink: 0;
+    }
+    .session-time { color: #6b6b6b; }
+
+    .session-item.is-inprogress {
+      background: rgba(249,115,22,0.05);
+      border-bottom-color: rgba(249,115,22,0.12);
+    }
+    .session-item.is-inprogress .session-title { color: #e5e5e5; }
+    .inprogress-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: #f97316;
+    }
+    .inprogress-badge .pip {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #f97316;
+      flex-shrink: 0;
+      animation: pip-pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pip-pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    .session-actions { display: flex; gap: 4px; flex-shrink: 0; }
+    .action-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+      color: #737373;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: default;
+      transition: background 0.12s, color 0.12s, border-color 0.12s;
+      position: relative;
+      gap: 6px;
+    }
+    .action-btn.copy-btn {
+      width: auto;
+      min-width: 62px;
+      padding: 0 9px;
+    }
+    .action-btn .action-text {
+      font-size: 10.5px;
+      font-weight: 600;
+      line-height: 1;
+    }
+    .action-btn:hover {
+      background: rgba(249,115,22,0.12);
+      border-color: rgba(249,115,22,0.35);
+      color: #f97316;
+    }
+    .action-btn.copied { color: #22c55e; border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.07); }
+
+    .ua-error-msg {
+      display: block;
+      margin: 10px 16px 0;
+      padding: 9px 12px;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 8px;
+      font-size: 11px;
+      color: #f87171;
+      line-height: 1.5;
+    }
+
+    .footer {
+      padding: 8px 16px 11px;
+      text-align: center;
+      font-size: 10px;
+      color: #6b6b6b;
+    }
+  </style>
+</head>
+<body>
+  <header class="dev-header">
+    <h1>noter — popup UI mock</h1>
+    <p>
+      Static fixtures for layout and CSS. Edit <code>../popup.html</code> for production, then mirror critical changes here (or split shared CSS later).
+      Open this file via <code>file://</code> or a static server.
+    </p>
+  </header>
+
+  <div class="dev-grid">
+    <div class="dev-col">
+      <div class="dev-label">Noting ON · in progress + saved sessions</div>
+      <div class="popup-chrome">
+        <div class="popup-shell">
+          <div class="header">
+            <div class="header-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+            </div>
+            <div class="header-text">
+              <h1>noter</h1>
+              <p>Select elements · add notes · export</p>
+            </div>
+          </div>
+          <div class="toggle-row is-active">
+            <div class="toggle-label">
+              <strong>Noting: <span>ON</span></strong>
+            </div>
+            <div class="switch">
+              <input type="checkbox" checked disabled />
+              <div class="switch-track"></div>
+              <div class="switch-thumb"></div>
+            </div>
+          </div>
+          <div class="sessions">
+            <div class="session-item is-inprogress">
+              <div class="session-info">
+                <div class="session-title">Current session</div>
+                <div class="session-meta">
+                  <span class="session-count">3 notes so far</span>
+                </div>
+              </div>
+              <div class="inprogress-badge"><span class="pip"></span>In progress</div>
+            </div>
+            <div class="session-item">
+              <div class="session-info">
+                <div class="session-title">Dashboard · Pool Statistics</div>
+                <div class="session-meta">
+                  <span class="session-count">2 notes</span>
+                  <span class="session-dot"></span>
+                  <span class="session-time">2:41 PM</span>
+                </div>
+              </div>
+              <div class="session-actions">
+                <button type="button" class="action-btn" title="Copy Markdown" aria-hidden="true">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                </button>
+                <button type="button" class="action-btn" title="Download .md" aria-hidden="true">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="session-item">
+              <div class="session-info">
+                <div class="session-title">Very long page title that should ellipsize in the popup width</div>
+                <div class="session-meta">
+                  <span class="session-count">1 note</span>
+                  <span class="session-dot"></span>
+                  <span class="session-time">9:05 AM</span>
+                </div>
+              </div>
+              <div class="session-actions">
+                <button type="button" class="action-btn copy-btn copied">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span class="action-text">Copied</span>
+                </button>
+                <button type="button" class="action-btn" aria-hidden="true">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="footer">Sessions saved per page · Esc to stop</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dev-col">
+      <div class="dev-label">Noting OFF · empty list</div>
+      <div class="popup-chrome">
+        <div class="popup-shell">
+          <div class="header">
+            <div class="header-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+            </div>
+            <div class="header-text">
+              <h1>noter</h1>
+              <p>Select elements · add notes · export</p>
+            </div>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-label">
+              <strong>Noting: <span>OFF</span></strong>
+            </div>
+            <div class="switch">
+              <input type="checkbox" disabled />
+              <div class="switch-track"></div>
+              <div class="switch-thumb"></div>
+            </div>
+          </div>
+          <div class="sessions">
+            <div class="sessions-empty">
+              <strong>No sessions yet</strong>
+              Turn on noting, select elements, then turn it off to save a session.
+            </div>
+          </div>
+          <div class="footer">Sessions saved per page · Esc to stop</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dev-col">
+      <div class="dev-label">Connection error (cannot message tab)</div>
+      <div class="popup-chrome">
+        <div class="popup-shell">
+          <div class="header">
+            <div class="header-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+            </div>
+            <div class="header-text">
+              <h1>noter</h1>
+              <p>Select elements · add notes · export</p>
+            </div>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-label">
+              <strong>Noting: <span>OFF</span></strong>
+            </div>
+            <div class="switch">
+              <input type="checkbox" disabled />
+              <div class="switch-track"></div>
+              <div class="switch-thumb"></div>
+            </div>
+          </div>
+          <div class="ua-error-msg">Cannot connect to this page. Try refreshing it.</div>
+          <div class="sessions">
+            <div class="sessions-empty">
+              <strong>No sessions yet</strong>
+              Turn on noting, select elements, then turn it off to save a session.
+            </div>
+          </div>
+          <div class="footer">Sessions saved per page · Esc to stop</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
