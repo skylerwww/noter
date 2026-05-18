@@ -19,14 +19,53 @@ function showError(msg) {
 }
 function clearError() { errorMsg.style.display = 'none'; }
 
+const RESTRICTED_URL_RE = /^(chrome|chrome-extension|edge|about|moz-extension|view-source):/;
+
+function isRestrictedUrl(url) {
+  return !url || RESTRICTED_URL_RE.test(url);
+}
+
+async function injectContentScript(tabId) {
+  await chrome.scripting.insertCSS({ target: { tabId }, files: ['content.css'] });
+  await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
+}
+
 function sendMsg(action, callback) {
-  chrome.tabs.sendMessage(currentTab.id, { action }, (response) => {
-    if (chrome.runtime.lastError) {
-      showError('Cannot connect to this page. Try refreshing it.');
+  if (!currentTab?.id) {
+    showError('No active tab found.');
+    if (callback) callback(null);
+    return;
+  }
+
+  if (isRestrictedUrl(currentTab.url)) {
+    showError('noter cannot run on this page. Open a normal website (https://…) and try again.');
+    if (callback) callback(null);
+    return;
+  }
+
+  const deliver = (response) => {
+    if (chrome.runtime.lastError || response == null) {
+      showError('Cannot connect to this page. Refresh the tab, then try again.');
+      if (callback) callback(null);
       return;
     }
     clearError();
     if (callback) callback(response);
+  };
+
+  chrome.tabs.sendMessage(currentTab.id, { action }, async (response) => {
+    if (!chrome.runtime.lastError) {
+      deliver(response);
+      return;
+    }
+
+    // Tab may have been open before the extension was installed — inject and retry once.
+    try {
+      await injectContentScript(currentTab.id);
+      chrome.tabs.sendMessage(currentTab.id, { action }, deliver);
+    } catch {
+      deliver(null);
+    }
   });
 }
 
@@ -184,7 +223,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   currentTab = tab;
 
   // Sync switch with current page mode state
-  sendMsg('getStatus', ({ active, count }) => setModeUI(active, count));
+  sendMsg('getStatus', (response) => {
+    if (response) setModeUI(response.active, response.count);
+  });
 
   // Load + render saved sessions
   loadSessions((sessions) => {
@@ -194,8 +235,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Switch toggle
   modeSwitch.addEventListener('change', () => {
+    const wantOn = modeSwitch.checked;
     sendMsg('toggleMode', (response) => {
-      setModeUI(response.active, 0);
+      if (!response) {
+        modeSwitch.checked = !wantOn;
+        return;
+      }
+      setModeUI(response.active, response.active ? modeCount : 0);
       if (response.session) {
         addSession(response.session, () => {
           loadSessions((sessions) => {

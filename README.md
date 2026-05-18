@@ -10,9 +10,21 @@ A Chrome/Chromium extension for annotating UI elements. Hover to highlight, clic
 1. Open Chrome and go to `chrome://extensions`
 2. Enable **Developer mode** (top-right toggle)
 3. Click **Load unpacked**
-4. Select this folder: the **noter** project root (this repository)
+4. Select the folder that contains **`manifest.json`** at its top level.
+   - If you used **Download ZIP** from GitHub, pick the inner folder (usually `noter-main/`), not the parent zip folder.
+5. **Reload the extension** after updates (chrome://extensions → Reload on the noter card).
+6. On any tab you want to annotate, **refresh the page** once after installing or updating.
 
 The extension icon will appear in your toolbar.
+
+### Troubleshooting
+
+| Symptom | Fix |
+|--------|-----|
+| “Cannot connect to this page” | Refresh the tab. If you just installed noter, the tab must reload so the content script can attach. |
+| Toggle does nothing | Same as above — refresh. Open a normal `https://` page (not `chrome://`, New Tab, or the Web Store). |
+| Works locally but not from GitHub ZIP | Load unpacked must point at the folder with `manifest.json`, not `noter-main.zip` or a parent directory. |
+| `file://` pages | On chrome://extensions → noter → Details, enable **Allow access to file URLs**. |
 
 ---
 
