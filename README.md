@@ -65,35 +65,6 @@ Self-contained page with inline screenshots. Open in any browser for human revie
 
 Download from the popup (document icon). Each task shows the fix request, element context, and a cropped screenshot.
 
-### JSON (`.json`)
-Structured data with all annotation metadata plus base64 screenshots. Ideal for programmatic agent pipelines.
-
-```json
-{
-  "meta": {
-    "tool": "noter v1.0",
-    "page": "Acme — Settings",
-    "url": "https://example.com/settings",
-    "exported": "2026-05-14T12:00:00.000Z",
-    "count": 3
-  },
-  "annotations": [
-    {
-      "id": 1,
-      "selector": "button.save-btn",
-      "tagName": "button",
-      "innerText": "Save",
-      "rect": { "x": 640, "y": 200, "width": 120, "height": 40 },
-      "note": "Button label should say \"Save changes\", not \"Save\".",
-      "screenshot": "data:image/png;base64,...",
-      "timestamp": "2026-05-14T12:00:00.000Z",
-      "pageUrl": "https://example.com/settings",
-      "pageTitle": "Acme — Settings"
-    }
-  ]
-}
-```
-
 ---
 
 ## Notes
