@@ -3,6 +3,18 @@
    Critical layout properties use !important to survive page resets.
 */
 
+/* ── Top-layer root (avoids page stacking-context bugs on Windows / SPAs) ─ */
+#__ua-root {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 2147483640 !important;
+  pointer-events: none !important;
+  isolation: isolate !important;
+  contain: layout style !important;
+}
+
 /* ── Highlight overlay ─────────────────────────────────────────────────── */
 #__ua-highlight {
   position: fixed !important;
@@ -82,6 +94,7 @@
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+  pointer-events: auto !important;
   backdrop-filter: blur(2px) !important;
   -webkit-backdrop-filter: blur(2px) !important;
 }

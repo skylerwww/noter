@@ -1,6 +1,6 @@
 # noter
 
-A Chrome/Chromium extension for annotating UI elements. Hover to highlight, click to select, capture a screenshot of the element, write a note, then export everything as a Markdown or JSON document ready to hand to an AI agent.
+A Chrome/Chromium extension for annotating UI elements. Hover to highlight, click to select, capture a screenshot of the element, write a note, then export as Markdown (for AI) or HTML (with screenshots) for review.
 <img width="348" height="324" alt="Screenshot 2026-05-16 at 6 48 11 PM" src="https://github.com/user-attachments/assets/6f14ef84-268c-4919-b6da-05a3699e91dd" />
 
 ---
@@ -39,7 +39,7 @@ The extension icon will appear in your toolbar.
 | 5 | Write your note, then press **Save Note** (or `⌘↵` / `Ctrl↵`) |
 | 6 | A numbered orange badge appears on the annotated element |
 | 7 | Repeat for as many elements as needed |
-| 8 | Open the popup → copy or download Markdown for a saved session |
+| 8 | Open the popup → copy Markdown or download HTML for a saved session |
 
 Press **Esc** at any time to stop noting without losing saved notes.
 
@@ -48,30 +48,22 @@ Press **Esc** at any time to stop noting without losing saved notes.
 ## Export formats
 
 ### Markdown (`.md`)
-Human-readable document with embedded base64 screenshots. Best for pasting directly into a chat with an AI agent.
+Text-first document for pasting into an AI chat. Includes selector, element context, and notes (no embedded screenshots).
 
 ```
-# UI Annotations
+# noter tasks
 
-| | |
-|---|---|
-| Page | Acme — Settings |
-| URL  | https://example.com/settings |
-| Total Annotations | 3 |
+## Task 1 — `button.save-btn`
 
-## Annotation #1
-| Field | Value |
-|---|---|
-| Element | `button.save-btn` |
-| Position | x: 640, y: 200 |
-| Size | 120 × 40 px |
+**Fix:** Button label should say "Save changes", not "Save".
 
-### Note
-> Button label should say "Save changes", not "Save".
-
-### Screenshot
-![Annotation #1](data:image/png;base64,...)
+**Element context:** `<button>` · 120×40px · "Save"
 ```
+
+### HTML (`.html`)
+Self-contained page with inline screenshots. Open in any browser for human review — best for sharing with designers or PMs.
+
+Download from the popup (document icon). Each task shows the fix request, element context, and a cropped screenshot.
 
 ### JSON (`.json`)
 Structured data with all annotation metadata plus base64 screenshots. Ideal for programmatic agent pipelines.

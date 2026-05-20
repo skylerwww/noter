@@ -3,47 +3,105 @@
 // the note modal, annotation badges, and message handling from the popup.
 
 (() => {
-  if (window.__uiAnnotatorLoaded) return;
-  window.__uiAnnotatorLoaded = true;
+  if (window.__noterRuntime) {
+    window.__noterRuntime.syncUi();
+    return;
+  }
 
-  // ─── State ────────────────────────────────────────────────────────────────
   const state = {
     active: false,
     annotations: [],
     counter: 0,
   };
 
-  // ─── UI Elements ──────────────────────────────────────────────────────────
-  let highlightEl, modeIndicator;
+  let highlightEl;
+  let modeIndicator;
+  let listenersBound = false;
+  let uiObserver = null;
 
-  function init() {
-    highlightEl = document.createElement('div');
-    highlightEl.id = '__ua-highlight';
-    document.documentElement.appendChild(highlightEl);
-
-    modeIndicator = document.createElement('div');
-    modeIndicator.id = '__ua-mode-indicator';
-    modeIndicator.innerHTML = '<span class="__ua-dot">●</span> Noting — click an element';
-    document.documentElement.appendChild(modeIndicator);
-
-    document.addEventListener('mouseover', onMouseOver, true);
-    document.addEventListener('click', onClick, true);
-    document.addEventListener('keydown', onKeyDown, true);
+  function mountParent() {
+    return document.body || document.documentElement;
   }
 
-  // ─── Mode Toggle ──────────────────────────────────────────────────────────
+  function ensureRoot() {
+    let root = document.getElementById('__ua-root');
+    if (!root?.isConnected) {
+      root = document.createElement('div');
+      root.id = '__ua-root';
+      mountParent().appendChild(root);
+    }
+    return root;
+  }
+
+  function ensureUiElements() {
+    const root = ensureRoot();
+    if (!highlightEl?.isConnected) {
+      highlightEl = document.createElement('div');
+      highlightEl.id = '__ua-highlight';
+      root.appendChild(highlightEl);
+    }
+    if (!modeIndicator?.isConnected) {
+      modeIndicator = document.createElement('div');
+      modeIndicator.id = '__ua-mode-indicator';
+      modeIndicator.innerHTML = '<span class="__ua-dot">●</span> Noting — click an element';
+      root.appendChild(modeIndicator);
+    }
+  }
+
+  function syncUi() {
+    ensureUiElements();
+    const root = document.getElementById('__ua-root');
+    if (root && root.parentElement !== mountParent()) {
+      mountParent().appendChild(root);
+    }
+    if (state.active) {
+      document.documentElement.classList.add('__ua-active');
+      modeIndicator.style.display = 'flex';
+      highlightEl.style.display = 'block';
+    } else {
+      document.documentElement.classList.remove('__ua-active');
+      modeIndicator.style.display = 'none';
+      highlightEl.style.display = 'none';
+    }
+  }
+
+  function startUiObserver() {
+    if (uiObserver) return;
+    uiObserver = new MutationObserver(() => {
+      if (!state.active) return;
+      if (!highlightEl?.isConnected || !modeIndicator?.isConnected) syncUi();
+    });
+    uiObserver.observe(document.documentElement, { childList: true, subtree: true });
+  }
+
+  function init() {
+    ensureUiElements();
+    syncUi();
+    if (!listenersBound) {
+      document.addEventListener('mouseover', onMouseOver, true);
+      document.addEventListener('click', onClick, true);
+      document.addEventListener('keydown', onKeyDown, true);
+      window.addEventListener('pageshow', onPageShow);
+      window.addEventListener('popstate', onPageShow);
+      listenersBound = true;
+    }
+    startUiObserver();
+  }
+
+  function onPageShow() {
+    if (state.active) syncUi();
+  }
+
   function activate() {
     state.active = true;
-    document.documentElement.classList.add('__ua-active');
-    modeIndicator.style.display = 'flex';
-    highlightEl.style.display = 'block';
+    syncUi();
+    startUiObserver();
+    chrome.runtime.sendMessage({ action: 'drawAttention' });
   }
 
   function deactivate() {
     state.active = false;
-    document.documentElement.classList.remove('__ua-active');
-    modeIndicator.style.display = 'none';
-    highlightEl.style.display = 'none';
+    syncUi();
   }
 
   function toggle() {
@@ -51,9 +109,9 @@
     return state.active;
   }
 
-  // ─── Event Handlers ───────────────────────────────────────────────────────
   function onMouseOver(e) {
     if (!state.active) return;
+    ensureUiElements();
     const el = e.target;
     if (isAnnotatorEl(el)) return;
     const rect = el.getBoundingClientRect();
@@ -67,6 +125,7 @@
 
   async function onClick(e) {
     if (!state.active) return;
+    ensureUiElements();
     const el = e.target;
     if (isAnnotatorEl(el)) return;
     e.preventDefault();
@@ -78,19 +137,18 @@
     const tagName = el.tagName.toLowerCase();
     const innerText = (el.innerText || '').trim().substring(0, 120);
 
-    // Hide annotator UI before screenshot
     highlightEl.style.display = 'none';
     modeIndicator.style.display = 'none';
 
     const screenshot = await captureAndCrop(rect);
 
-    // Restore annotator UI
-    highlightEl.style.display = 'block';
-    modeIndicator.style.display = 'flex';
+    if (state.active) {
+      highlightEl.style.display = 'block';
+      modeIndicator.style.display = 'flex';
+    }
 
-    // Show note modal
     const note = await showModal(screenshot, selector);
-    if (note === null) return; // user cancelled
+    if (note === null) return;
 
     const id = ++state.counter;
     state.annotations.push({
@@ -118,7 +176,6 @@
     if (e.key === 'Escape' && state.active) deactivate();
   }
 
-  // ─── Screenshot ───────────────────────────────────────────────────────────
   function captureAndCrop(rect) {
     return new Promise((resolve) => {
       chrome.runtime.sendMessage({ action: 'captureScreenshot' }, (response) => {
@@ -147,7 +204,6 @@
     });
   }
 
-  // ─── Note Modal ───────────────────────────────────────────────────────────
   function showModal(screenshot, selector) {
     return new Promise((resolve) => {
       const overlay = document.createElement('div');
@@ -156,7 +212,6 @@
       const modal = document.createElement('div');
       modal.id = '__ua-modal';
 
-      // Header
       const header = document.createElement('div');
       header.className = '__ua-modal-header';
       header.innerHTML = `
@@ -168,7 +223,6 @@
         <button class="__ua-close-btn" id="__ua-close-x">✕</button>
       `;
 
-      // Screenshot preview
       if (screenshot) {
         const preview = document.createElement('div');
         preview.className = '__ua-preview';
@@ -182,7 +236,6 @@
         modal.appendChild(header);
       }
 
-      // Body
       const body = document.createElement('div');
       body.className = '__ua-modal-body';
 
@@ -199,13 +252,12 @@
 
       const hint = document.createElement('p');
       hint.className = '__ua-hint';
-      hint.textContent = '⌘↵ to save · Esc to cancel';
+      hint.textContent = 'Ctrl+Enter to save · Esc to cancel';
 
       body.appendChild(label);
       body.appendChild(textarea);
       body.appendChild(hint);
 
-      // Footer
       const footer = document.createElement('div');
       footer.className = '__ua-modal-footer';
 
@@ -222,7 +274,7 @@
       body.appendChild(footer);
       modal.appendChild(body);
       overlay.appendChild(modal);
-      document.documentElement.appendChild(overlay);
+      ensureRoot().appendChild(overlay);
 
       setTimeout(() => textarea.focus(), 60);
 
@@ -237,7 +289,7 @@
         close(note);
       });
       cancelBtn.addEventListener('click', () => close(null));
-      document.getElementById('__ua-close-x').addEventListener('click', () => close(null));
+      overlay.querySelector('#__ua-close-x').addEventListener('click', () => close(null));
       overlay.addEventListener('click', (e) => { if (e.target === overlay) close(null); });
       textarea.addEventListener('input', () => textarea.classList.remove('__ua-textarea-error'));
       textarea.addEventListener('keydown', (e) => {
@@ -250,7 +302,6 @@
     });
   }
 
-  // ─── Annotation Badge ─────────────────────────────────────────────────────
   function addBadge(el, id, note) {
     const rect = el.getBoundingClientRect();
     const scrollX = window.scrollX;
@@ -263,10 +314,9 @@
     badge.dataset.annotationId = id;
     badge.style.top = (rect.top + scrollY - 10) + 'px';
     badge.style.left = (rect.left + scrollX - 10) + 'px';
-    document.documentElement.appendChild(badge);
+    mountParent().appendChild(badge);
   }
 
-  // ─── Helpers ──────────────────────────────────────────────────────────────
   function isAnnotatorEl(el) {
     const id = el.id || '';
     const cls = (typeof el.className === 'string') ? el.className : '';
@@ -304,10 +354,8 @@
       .replace(/"/g, '&quot;');
   }
 
-  // ─── Export Helpers (called from popup via message) ───────────────────────
   function buildMarkdown(annotations, pageTitle, pageUrl) {
     const date = new Date().toISOString();
-    // YAML frontmatter — compact, zero wasted tokens vs. markdown tables
     const lines = [
       `---`,
       `page: "${pageTitle}"`,
@@ -326,10 +374,8 @@
       lines.push(``);
       lines.push(`## Task ${ann.id} — \`${ann.selector}\``);
       lines.push(``);
-      // Lead with the actionable instruction
       lines.push(`**Fix:** ${ann.note.replace(/\n/g, ' ')}`);
       lines.push(``);
-      // Compact context line — no x/y coords (not actionable for code changes)
       const ctx = [
         `\`<${ann.tagName}>\``,
         `${ann.rect.width}×${ann.rect.height}px`,
@@ -343,10 +389,162 @@
     return lines.join('\n');
   }
 
+  function buildHtml(annotations, pageTitle, pageUrl) {
+    const exported = new Date().toISOString();
+    const tasksHtml = annotations.map((ann) => {
+      const ctx = [
+        `<code>&lt;${escapeHtml(ann.tagName)}&gt;</code>`,
+        `${ann.rect.width}×${ann.rect.height}px`,
+      ];
+      if (ann.innerText) {
+        ctx.push(`"${escapeHtml(ann.innerText.replace(/\n/g, ' '))}"`);
+      }
+      const screenshotBlock = ann.screenshot
+        ? `<figure class="screenshot"><img src="${ann.screenshot}" alt="Task ${ann.id} screenshot"></figure>`
+        : `<p class="no-screenshot">Screenshot unavailable</p>`;
+
+      return `
+    <article class="task">
+      <h2>Task ${ann.id} — <code>${escapeHtml(ann.selector)}</code></h2>
+      <p class="fix"><strong>Fix:</strong> ${escapeHtml(ann.note).replace(/\n/g, '<br>')}</p>
+      <p class="context"><strong>Element context:</strong> ${ctx.join(' · ')}</p>
+      ${screenshotBlock}
+    </article>`;
+    }).join('\n');
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>noter — ${escapeHtml(pageTitle)}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      line-height: 1.55;
+      color: #171717;
+      background: #fafafa;
+      padding: 32px 20px 48px;
+    }
+    .wrap { max-width: 760px; margin: 0 auto; }
+    header {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 24px 28px;
+      margin-bottom: 24px;
+    }
+    header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #0a0a0a;
+      margin-bottom: 6px;
+    }
+    header .intro {
+      color: #525252;
+      font-size: 14px;
+      margin-bottom: 18px;
+    }
+    .meta {
+      display: grid;
+      gap: 6px;
+      font-size: 13px;
+    }
+    .meta div { display: flex; gap: 8px; }
+    .meta dt {
+      font-weight: 600;
+      color: #737373;
+      min-width: 64px;
+      flex-shrink: 0;
+    }
+    .meta dd { color: #171717; word-break: break-word; }
+    .meta a { color: #ea580c; word-break: break-all; }
+    .task {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 22px 28px;
+      margin-bottom: 16px;
+    }
+    .task h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #0a0a0a;
+      margin-bottom: 12px;
+      word-break: break-word;
+    }
+    .task h2 code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      font-weight: 500;
+      color: #c2410c;
+      background: #fff7ed;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .fix, .context {
+      font-size: 14px;
+      color: #404040;
+      margin-bottom: 10px;
+    }
+    .fix strong, .context strong { color: #171717; }
+    .context code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      background: #f5f5f5;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    .screenshot {
+      margin-top: 16px;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #f5f5f5;
+    }
+    .screenshot img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .no-screenshot {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #a3a3a3;
+      font-style: italic;
+    }
+    footer {
+      margin-top: 28px;
+      text-align: center;
+      font-size: 12px;
+      color: #a3a3a3;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>noter tasks</h1>
+      <p class="intro">Each task is a numbered fix request tied to a specific UI element.</p>
+      <dl class="meta">
+        <div><dt>Page</dt><dd>${escapeHtml(pageTitle)}</dd></div>
+        <div><dt>URL</dt><dd><a href="${escapeHtml(pageUrl)}">${escapeHtml(pageUrl)}</a></dd></div>
+        <div><dt>Exported</dt><dd>${escapeHtml(exported)}</dd></div>
+        <div><dt>Tasks</dt><dd>${annotations.length}</dd></div>
+      </dl>
+    </header>
+    <main>
+      ${tasksHtml}
+    </main>
+    <footer>Exported by noter</footer>
+  </div>
+</body>
+</html>`;
+  }
+
   function buildJson(annotations, pageTitle, pageUrl) {
-    // Lean schema: per-annotation fields that are redundant with meta are omitted.
-    // `note` renamed to `task` for imperative agent clarity.
-    // x/y coords dropped (not actionable for code edits).
     const payload = {
       meta: {
         tool: 'noter v1.0',
@@ -368,40 +566,42 @@
     return JSON.stringify(payload, null, 2);
   }
 
-  // ─── Message Listener ─────────────────────────────────────────────────────
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-    switch (msg.action) {
-      case 'toggleMode': {
-        const wasActive = state.active;
-        const nowActive = toggle();
-        // When turning OFF with annotations, return the completed session data
-        if (wasActive && !nowActive && state.annotations.length > 0) {
-          const md = buildMarkdown(state.annotations, document.title, location.href);
-          const session = {
-            id: Date.now(),
-            pageTitle: document.title,
-            pageUrl: location.href,
-            count: state.annotations.length,
-            markdown: md,
-            filename: `annotations-${Date.now()}.md`,
-            timestamp: new Date().toISOString(),
-          };
-          // Reset for next session
-          state.annotations = [];
-          state.counter = 0;
-          document.querySelectorAll('.__ua-badge').forEach(b => b.remove());
-          sendResponse({ active: nowActive, session });
-        } else {
-          sendResponse({ active: nowActive, session: null });
-        }
-        break;
-      }
-      case 'getStatus':
-        sendResponse({ active: state.active, count: state.annotations.length });
-        break;
+    if (msg.action === 'ping' || msg.action === 'getStatus' || msg.action === 'syncUi') {
+      syncUi();
+      sendResponse({ ok: true, active: state.active, count: state.annotations.length });
+      return;
     }
-    return true; // keep channel open for async-style responses
+
+    if (msg.action === 'toggleMode') {
+      const wasActive = state.active;
+      const nowActive = toggle();
+      if (wasActive && !nowActive && state.annotations.length > 0) {
+        const ts = Date.now();
+        const md = buildMarkdown(state.annotations, document.title, location.href);
+        const html = buildHtml(state.annotations, document.title, location.href);
+        const session = {
+          id: ts,
+          pageTitle: document.title,
+          pageUrl: location.href,
+          count: state.annotations.length,
+          markdown: md,
+          html,
+          filename: `annotations-${ts}.md`,
+          htmlFilename: `annotations-${ts}.html`,
+          timestamp: new Date().toISOString(),
+        };
+        state.annotations = [];
+        state.counter = 0;
+        document.querySelectorAll('.__ua-badge').forEach(b => b.remove());
+        sendResponse({ active: nowActive, session, count: state.annotations.length });
+      } else {
+        sendResponse({ active: nowActive, session: null, count: state.annotations.length });
+      }
+      return;
+    }
   });
 
+  window.__noterRuntime = { syncUi };
   init();
 })();

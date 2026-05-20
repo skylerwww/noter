@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>noter — Acme · Settings (mock export)</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      line-height: 1.55;
+      color: #171717;
+      background: #fafafa;
+      padding: 32px 20px 48px;
+    }
+    .wrap { max-width: 760px; margin: 0 auto; }
+    header {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 24px 28px;
+      margin-bottom: 24px;
+    }
+    header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #0a0a0a;
+      margin-bottom: 6px;
+    }
+    header .intro {
+      color: #525252;
+      font-size: 14px;
+      margin-bottom: 18px;
+    }
+    .meta {
+      display: grid;
+      gap: 6px;
+      font-size: 13px;
+    }
+    .meta div { display: flex; gap: 8px; }
+    .meta dt {
+      font-weight: 600;
+      color: #737373;
+      min-width: 64px;
+      flex-shrink: 0;
+    }
+    .meta dd { color: #171717; word-break: break-word; }
+    .meta a { color: #ea580c; word-break: break-all; }
+    .task {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 22px 28px;
+      margin-bottom: 16px;
+    }
+    .task h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #0a0a0a;
+      margin-bottom: 12px;
+      word-break: break-word;
+    }
+    .task h2 code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      font-weight: 500;
+      color: #c2410c;
+      background: #fff7ed;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .fix, .context {
+      font-size: 14px;
+      color: #404040;
+      margin-bottom: 10px;
+    }
+    .fix strong, .context strong { color: #171717; }
+    .context code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      background: #f5f5f5;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    .screenshot {
+      margin-top: 16px;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #f5f5f5;
+    }
+    .screenshot img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .screenshot-mock {
+      padding: 48px 24px;
+      text-align: center;
+      color: #737373;
+      font-size: 13px;
+      background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+    }
+    footer {
+      margin-top: 28px;
+      text-align: center;
+      font-size: 12px;
+      color: #a3a3a3;
+    }
+    .dev-banner {
+      max-width: 760px;
+      margin: 0 auto 16px;
+      padding: 10px 14px;
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #92400e;
+    }
+  </style>
+</head>
+<body>
+  <p class="dev-banner">Static mock of <code>buildHtml()</code> output — open to preview export layout without running the extension.</p>
+  <div class="wrap">
+    <header>
+      <h1>noter tasks</h1>
+      <p class="intro">Each task is a numbered fix request tied to a specific UI element.</p>
+      <dl class="meta">
+        <div><dt>Page</dt><dd>Acme · Settings</dd></div>
+        <div><dt>URL</dt><dd><a href="https://example.com/settings">https://example.com/settings</a></dd></div>
+        <div><dt>Exported</dt><dd>2026-05-20T14:30:00.000Z</dd></div>
+        <div><dt>Tasks</dt><dd>2</dd></div>
+      </dl>
+    </header>
+    <main>
+      <article class="task">
+        <h2>Task 1 — <code>button.save-btn</code></h2>
+        <p class="fix"><strong>Fix:</strong> Button label should say "Save changes", not "Save".</p>
+        <p class="context"><strong>Element context:</strong> <code>&lt;button&gt;</code> · 120×40px · "Save"</p>
+        <figure class="screenshot">
+          <div class="screenshot-mock">Screenshot placeholder (base64 PNG in real export)</div>
+        </figure>
+      </article>
+      <article class="task">
+        <h2>Task 2 — <code>nav.sidebar > a:nth-of-type(3)</code></h2>
+        <p class="fix"><strong>Fix:</strong> Active nav item needs higher contrast.<br>Current gray on gray fails WCAG AA.</p>
+        <p class="context"><strong>Element context:</strong> <code>&lt;a&gt;</code> · 200×36px · "Billing"</p>
+        <figure class="screenshot">
+          <div class="screenshot-mock">Screenshot placeholder (base64 PNG in real export)</div>
+        </figure>
+      </article>
+    </main>
+    <footer>Exported by noter</footer>
+  </div>
+</body>
+</html>

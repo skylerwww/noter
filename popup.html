@@ -14,9 +14,9 @@
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* Blue “frame” + dark card share concentric radii (22px card + 8px ring → 30px outer). */
+    /* Frame color (red = local dev test) + dark card share concentric radii (22px card + 8px ring → 30px outer). */
     html {
-      background: #2563eb;
+      background: #dc2626;
       border-radius: 30px;
       overflow: hidden;
     }
@@ -24,13 +24,14 @@
     body {
       box-sizing: border-box;
       width: 336px;
+      min-width: 336px;
       margin: 0;
       padding: 8px;
       background: transparent;
       color: #e5e5e5;
       font-family: 'Geist', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       font-size: 13px;
-      min-height: 120px;
+      min-height: 200px;
     }
 
     .popup-shell {
@@ -251,6 +252,17 @@
       font-size: 10.5px;
       font-weight: 600;
       line-height: 1;
+    }
+    .action-btn .action-icon--check,
+    .action-btn .action-text {
+      display: none;
+    }
+    .action-btn.copied .action-icon--copy {
+      display: none;
+    }
+    .action-btn.copied .action-icon--check,
+    .action-btn.copied .action-text {
+      display: flex;
     }
     .action-btn:hover {
       background: rgba(249,115,22,0.12);

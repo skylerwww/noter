@@ -25,9 +25,15 @@ function isRestrictedUrl(url) {
   return !url || RESTRICTED_URL_RE.test(url);
 }
 
-async function injectContentScript(tabId) {
-  await chrome.scripting.insertCSS({ target: { tabId }, files: ['content.css'] });
-  await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
+async function ensurePageScript(tab) {
+  if (!tab?.id || isRestrictedUrl(tab.url)) return false;
+  try {
+    await chrome.scripting.insertCSS({ target: { tabId: tab.id }, files: ['content.css'] });
+    await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function sendMsg(action, callback) {
@@ -43,8 +49,10 @@ function sendMsg(action, callback) {
     return;
   }
 
-  const deliver = (response) => {
-    if (chrome.runtime.lastError || response == null) {
+  const tabId = currentTab.id;
+
+  const finish = (response, failed) => {
+    if (failed) {
       showError('Cannot connect to this page. Refresh the tab, then try again.');
       if (callback) callback(null);
       return;
@@ -53,20 +61,21 @@ function sendMsg(action, callback) {
     if (callback) callback(response);
   };
 
-  chrome.tabs.sendMessage(currentTab.id, { action }, async (response) => {
-    if (!chrome.runtime.lastError) {
-      deliver(response);
+  (async () => {
+    const injected = await ensurePageScript(currentTab);
+    if (!injected) {
+      finish(null, true);
       return;
     }
 
-    // Tab may have been open before the extension was installed — inject and retry once.
-    try {
-      await injectContentScript(currentTab.id);
-      chrome.tabs.sendMessage(currentTab.id, { action }, deliver);
-    } catch {
-      deliver(null);
-    }
-  });
+    chrome.tabs.sendMessage(tabId, { action }, (response) => {
+      if (chrome.runtime.lastError) {
+        finish(null, true);
+        return;
+      }
+      finish(response, false);
+    });
+  })();
 }
 
 function formatTime(isoString) {
@@ -74,8 +83,8 @@ function formatTime(isoString) {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function triggerDownload(content, filename) {
-  const blob = new Blob([content], { type: 'text/markdown' });
+function triggerDownload(content, filename, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href = url; a.download = filename; a.click();
@@ -107,9 +116,16 @@ const COPY_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" st
   <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
 </svg>`;
 
-const DL_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+const DL_MD_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
   <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+</svg>`;
+
+const DL_HTML_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+  <polyline points="14 2 14 8 20 8"/>
+  <line x1="16" y1="13" x2="8" y2="13"/>
+  <line x1="16" y1="17" x2="8" y2="17"/>
 </svg>`;
 
 const CHECK_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -149,30 +165,40 @@ function renderSessions(sessions) {
         </div>
       </div>
       <div class="session-actions">
-        <button class="action-btn" data-action="copy" data-id="${s.id}" title="Copy Markdown">
-          ${COPY_SVG}
+        <button type="button" class="action-btn copy-btn" data-action="copy" data-id="${s.id}" title="Copy Markdown">
+          <span class="action-icon action-icon--copy" aria-hidden="true">${COPY_SVG}</span>
+          <span class="action-icon action-icon--check" aria-hidden="true">${CHECK_SVG}</span>
+          <span class="action-text">Copied</span>
         </button>
-        <button class="action-btn" data-action="download" data-id="${s.id}" title="Download .md">
-          ${DL_SVG}
+        <button class="action-btn" data-action="download-md" data-id="${s.id}" title="Download .md">
+          ${DL_MD_SVG}
         </button>
+        ${s.html ? `<button class="action-btn" data-action="download-html" data-id="${s.id}" title="Download .html">
+          ${DL_HTML_SVG}
+        </button>` : ''}
       </div>`;
 
     // Wire up buttons
     item.querySelector('[data-action="copy"]').addEventListener('click', (e) => {
+      const btn = e.currentTarget;
       navigator.clipboard.writeText(s.markdown).then(() => {
-        const btn = e.currentTarget;
+        if (!btn.isConnected) return;
         btn.classList.add('copied');
-        btn.innerHTML = CHECK_SVG + '<span class="action-text">Copied</span>';
-        setTimeout(() => {
-          btn.innerHTML = COPY_SVG;
-          btn.classList.remove('copied');
-        }, 1800);
+        clearTimeout(btn._copiedTimer);
+        btn._copiedTimer = setTimeout(() => btn.classList.remove('copied'), 1800);
       });
     });
 
-    item.querySelector('[data-action="download"]').addEventListener('click', () => {
-      triggerDownload(s.markdown, s.filename);
+    item.querySelector('[data-action="download-md"]').addEventListener('click', () => {
+      triggerDownload(s.markdown, s.filename, 'text/markdown');
     });
+
+    const htmlBtn = item.querySelector('[data-action="download-html"]');
+    if (htmlBtn) {
+      htmlBtn.addEventListener('click', () => {
+        triggerDownload(s.html, s.htmlFilename, 'text/html');
+      });
+    }
 
     sessionsList.appendChild(item);
   });
@@ -218,30 +244,33 @@ function setModeUI(active, count = 0) {
 
 // ── Init ──────────────────────────────────────────────────────────────────
 
-document.addEventListener('DOMContentLoaded', async () => {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  currentTab = tab;
+document.addEventListener('DOMContentLoaded', () => {
+  // Paint saved sessions immediately so the popup never feels blank while connecting.
+  loadSessions((sessions) => renderSessions(sessions));
 
-  // Sync switch with current page mode state
-  sendMsg('getStatus', (response) => {
-    if (response) setModeUI(response.active, response.count);
-  });
-
-  // Load + render saved sessions
-  loadSessions((sessions) => {
-    renderSessions(sessions);
-    setInProgressItem(modeActive, modeCount);
+  modeSwitch.disabled = true;
+  chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+    currentTab = tab;
+    modeSwitch.disabled = false;
+    sendMsg('syncUi', (response) => {
+      if (response) setModeUI(response.active, response.count);
+    });
   });
 
   // Switch toggle
   modeSwitch.addEventListener('change', () => {
+    if (!currentTab?.id) {
+      modeSwitch.checked = !modeSwitch.checked;
+      showError('Still loading — try again in a moment.');
+      return;
+    }
     const wantOn = modeSwitch.checked;
     sendMsg('toggleMode', (response) => {
       if (!response) {
         modeSwitch.checked = !wantOn;
         return;
       }
-      setModeUI(response.active, response.active ? modeCount : 0);
+      setModeUI(response.active, response.count ?? 0);
       if (response.session) {
         addSession(response.session, () => {
           loadSessions((sessions) => {
